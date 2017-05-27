@@ -1,0 +1,52 @@
+#Call libraries
+library(minfi)
+
+
+#Read in data and write Raw Files
+
+dat1 = read.csv("targets.csv")
+RGset <- read.metharray.exp(targets = dat1)
+RGset@annotation = c(array = "IlluminaHumanMethylationEPIC", annotation = "ilm10b2.hg19")
+MSet.raw <-preprocessRaw(RGset)
+Meth.raw <- getMeth(MSet.raw)
+write.table(Meth.raw,"Meth.raw.csv", row.names=T, sep=",")
+Unmeth.raw <- getUnmeth(MSet.raw)
+write.table(Unmeth.raw,"Unmeth.raw.csv", row.names=T, sep=",")
+ratioSet <- ratioConvert(MSet.raw, what = "both", keepCN = TRUE)
+beta <- getBeta(ratioSet)
+write.table(beta,"beta.raw.csv", row.names=T, sep=",")
+
+
+## Detect P-values
+pvalue <- detectionP(RGset, type = "m+u")
+write.table(pvalue,"pvalue.csv", row.names=T, sep=",")
+
+## Create pvalue correction matrix
+pvalue_mat <- pvalue
+pvalue_mat[pvalue_mat > 0.05] <- NA
+pvalue_mat[pvalue_mat < 0.05] <- 0
+
+## Preprocess Noob
+MSet.noob <- preprocessNoob(RGset, offset = 15, dyeCorr = TRUE, verbose = TRUE)
+
+## Generate beta values from preprocess noob
+ratioSet.noob <- ratioConvert(MSet.noob, what =  "both", keepCN = TRUE)
+beta.noob <- getBeta(ratioSet.noob)
+write.table(beta.noob,"beta.noob.csv", row.names=T, sep=",")
+
+## Write methylation and unmethylation values after preprocess noob
+Meth.noob <- getMeth(MSet.noob)
+Unmeth.noob <- getUnmeth(MSet.noob)
+
+write.table(Meth.noob,"Meth.noob.csv", row.names=T, sep=",")
+write.table(Unmeth.noob,"Unmeth.noob.csv", row.names=T, sep=",")
+
+
+## Overlay correction matrix on the beta values derived from noob
+
+noob_correct <- beta.noob + pvalue_mat
+write.table(noob_correct,"noob_correct.csv", row.names=T, sep=",")
+
+## Get SNP data and write table
+rgset_snp <- getSnpBeta(RGset)
+write.table(rgset_snp,"rgset_snp.csv", row.names=T, sep=",")
