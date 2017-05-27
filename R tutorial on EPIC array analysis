@@ -50,3 +50,15 @@ write.table(noob_correct,"noob_correct.csv", row.names=T, sep=",")
 ## Get SNP data and write table
 rgset_snp <- getSnpBeta(RGset)
 write.table(rgset_snp,"rgset_snp.csv", row.names=T, sep=",")
+
+
+
+## Call wateRmelon package
+library(wateRmelon)
+
+## Dasen normalization from preprocess noob data
+d2 <- dasen(MSet.noob, NULL, onetwo, fudge = 100, ret2=FALSE)
+
+## perform correction matrix  post dasen normalization and write table
+dasen.noob.correct <- d2 + pvalue_mat
+write.table(dasen.noob.correct,"dasen.noob.correct.csv", row.names=T, sep=",")
